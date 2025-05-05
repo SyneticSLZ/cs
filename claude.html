@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambridge AS & A Level Computer Science Study Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f9fafb;
+        }
+        .question-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .flashcard {
+            perspective: 1000px;
+            height: 100%;
+            width: 100%;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            padding: 1rem;
+        }
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+        .confidence-btn {
+            transition: transform 0.2s;
+        }
+        .confidence-btn:hover {
+            transform: scale(1.2);
+        }
+        @media (max-width: 640px) {
+            .controls-container {
+                flex-direction: column;
+            }
+            .controls-container > div {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+        <!-- Header -->
+        <div class="mb-6 bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">Cambridge AS & A Level Computer Science Study Tool</h1>
+            <p class="text-sm md:text-base text-gray-600">Master syllabus content, test your knowledge with exam questions, and track your progress.</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="mb-6 bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+            <div class="controls-container flex flex-wrap justify-between items-center gap-4">
+                <div class="w-full md:w-1/2">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="Search topics, questions or exam references..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div class="flex space-x-2">
+                    <button id="syllabus-view-btn" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium">Syllabus View</button>
+                    <button id="exam-view-btn" class="bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm font-medium">Exam Questions</button>
+                    <button id="stats-view-btn" class="bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm font-medium">Statistics</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Metrics -->
+        <div class="mb-6 bg-white p-4 md:p-6 rounded-xl border shadow-sm">
+            <h2 class="font-semibold text-lg text-gray-800 mb-4">Progress Overview</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Total Questions</span>
+                    <p id="total-questions" class="text-xl font-semibold text-gray-800">0</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Mastered</span>
+                    <p id="mastered-questions" class="text-xl font-semibold text-gray-800">0</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Completion</span>
+                    <p id="completion-percentage" class="text-xl font-semibold text-gray-800">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div id="content-container">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Flashcards Modal -->
+        <div id="flashcards-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-4 md:p-6 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Flashcards</h2>
+                    <button id="close-flashcards" class="text-gray-500 hover:text-gray-700 text-sm font-medium">Close</button>
+                </div>
+                <div id="flashcards-content" class="space-y-4">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Answer Modal -->
+        <div id="answer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-4 md:p-6 rounded-xl max-w-2xl w-full">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800">Marking Scheme</h2>
+                        <p id="marks-available" class="text-sm text-gray-600"></p>
+                    </div>
+                    <button id="close-answer" class="text-gray-500 hover:text-gray-700 text-sm font-medium">Close</button>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Question:</h3>
+                    <p id="modal-question" class="text-sm bg-gray-50 p-3 rounded-lg"></p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Mark Scheme:</h3>
+                    <ul id="mark-scheme" class="text-sm bg-gray-50 p-3 rounded-lg space-y-1">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Topics data structure
+        const topics = [
+            {
+                number: "1",
+                name: "Information Representation",
+                notes: [
+                    "Binary prefixes (e.g., kibibyte = 1024 bytes) differ from decimal prefixes (e.g., kilobyte = 1000 bytes).",
+                    "Number systems include binary, denary, hexadecimal, and BCD; two's complement represents negative numbers.",
+                    "Binary addition/subtraction can cause overflow if results exceed bit limits.",
+                    "BCD is used in calculators and BIOS; hexadecimal simplifies binary representation.",
+                    "ASCII (8-bit) supports basic characters, while Unicode (up to 32-bit) handles global scripts.",
+                    "Bitmap images use pixels, resolution, and color depth; file size = width × height × bit depth.",
+                    "Vector graphics use scalable drawing objects, ideal for logos.",
+                    "Sound is digitized via sampling; higher sampling rate/resolution improves quality but increases file size.",
+                    "Compression (lossy/lossless) reduces file size; RLE is lossless for bitmaps."
+                ],
+                subtopics: [
+                    {
+                        number: "1.1",
+                        name: "Data Representation",
+                        points: [
+                            {
+                                point: "Show understanding of binary magnitudes and the difference between binary prefixes and decimal prefixes",
+                                notes: "Understand the difference between and use: kibi and kilo, mebi and mega, gibi and giga, tebi and tera",
+                                examQuestions: [
+                                    {
+                                        question: "State the difference between a kibibyte and a kilobyte.",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(i)",
+                                        marks: 1,
+                                        markScheme: [
+                                            "1 mark from:",
+                                            "• Kibibyte is 1024 bytes and kilobyte is 1000 bytes",
+                                            "• Kibibyte is binary prefix and kilobyte is denary prefix"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Show understanding of different number systems",
+                                notes: "Use the binary, denary, hexadecimal number bases and Binary Coded Decimal (BCD) and one's and two's complement representation for binary numbers",
+                                examQuestions: [
+                                    {
+                                        question: "Convert the denary number 964 into Binary Coded Decimal (BCD).",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(ii)",
+                                        marks: 1,
+                                        markScheme: [
+                                            "1001 0110 0100"
+                                        ]
+                                    },
+                                    {
+                                        question: "Convert the positive binary integer 11110010 into hexadecimal.",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(iii)",
+                                        marks: 1,
+                                        markScheme: [
+                                            "F2"
+                                        ]
+                                    },
+                                    {
+                                        question: "Convert the two's complement binary integer 11001011 into denary.",
+                                        paperReference: "9608/12/O/N/21",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for working",
+                                            "1 mark for correct answer",
+                                            "11001011",
+                                            "00110100 flip bits",
+                                            "00110101 add 1",
+                                            "32 + 16 + 4 + 1",
+                                            "Answer: −53"
+                                        ]
+                                    },
+                                    {
+                                        question: "Give the smallest and largest two's complement binary number that can be represented using 8 bits.",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(iv)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "Smallest: 10000000",
+                                            "Largest: 01111111"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Perform binary addition and subtraction",
+                                notes: "Using positive and negative binary integers. Show understanding of how overflow can occur",
+                                examQuestions: [
+                                    {
+                                        question: "Add the following two binary integers using binary addition. Show your working: 10110000 + 00011011",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(v)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for working",
+                                            "1 mark for answer",
+                                            "10110000",
+                                            "+ 00011011",
+                                            "11001011"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "1.2",
+                        name: "Multimedia",
+                        points: [
+                            {
+                                point: "Show understanding of how data for a bitmapped image are encoded",
+                                notes: "Use and understand the terms: pixel, file header, image resolution, screen resolution, colour depth/bit depth",
+                                examQuestions: [
+                                    {
+                                        question: "Complete the table by defining the image terms: Drawing list, Pixel, Colour depth",
+                                        paperReference: "9618/11/M/J/23 Q1(a)",
+                                        marks: 3,
+                                        markScheme: [
+                                            "1 mark for each correct definition",
+                                            "Drawing list: All the drawing objects in an image // a list that stores the commands required to draw each object",
+                                            "Pixel: The smallest part of the image // one square / dot of one colour",
+                                            "Colour depth: The number of bits per pixel // determines the number of colours that can be represented in the image"
+                                        ]
+                                    },
+                                    {
+                                        question: "Colour depth and image resolution are both included in the file header of a bitmap image. Identify two other items that could be included in the file header of each photograph.",
+                                        paperReference: "9618/11/M/J/23 Q1(b)(i)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark each",
+                                            "Examples:",
+                                            "• Confirmation that it is a bitmap // file type",
+                                            "• Compression type",
+                                            "• Location/offset of data within the file",
+                                            "• Dimensions e.g.100 × 100 pixels"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Perform calculations to estimate the file size for a bitmap image",
+                                notes: "Use the terms: image resolution, colour depth/bit depth",
+                                examQuestions: [
+                                    {
+                                        question: "One of the photographs has a bit depth of 8 bytes and an image resolution of 1500 pixels wide and 3000 pixels high. Calculate the file size of the photograph in megabytes. Show your working.",
+                                        paperReference: "9618/11/M/J/23 Q1(b)(ii)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for working; 1 mark for answer",
+                                            "• Working: (1500 * 3000 * 8) / 1000 / 1000",
+                                            "• Answer: 36 MB"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "1.3",
+                        name: "Compression",
+                        points: [
+                            {
+                                point: "Show understanding of the need for and examples of the use of compression",
+                                notes: "No additional notes provided",
+                                examQuestions: [
+                                    {
+                                        question: "The photographs are compressed before they are uploaded to a web server. Customers download the photographs from this web server. Explain the reasons why compressing the photographs will benefit the customers.",
+                                        paperReference: "9618/11/M/J/23 Q1(c)(i)",
+                                        marks: 3,
+                                        markScheme: [
+                                            "1 mark each",
+                                            "Examples:",
+                                            "• The customers will be able to download the photographs in less time",
+                                            "…and they will take less of the customer's bandwidth",
+                                            "• The photographs will take up less space on the customer's storage medium",
+                                            "…therefore the customers can store more images",
+                                            "…and will have more space for other files"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Show understanding of lossy and lossless compression and justify the use of a method in a given situation",
+                                notes: "Including the use of run-length encoding (RLE)",
+                                examQuestions: [
+                                    {
+                                        question: "An image can be compressed using run-length encoding (RLE). Explain the reasons why RLE may not reduce the file size of a bitmap image. Give one example in your answer.",
+                                        paperReference: "9618/11/M/J/23 Q1(c)(ii)",
+                                        marks: 3,
+                                        markScheme: [
+                                            "1 mark each to max 2 for explanation; 1 mark for an image related example",
+                                            "• RLE stores a colour and the number of times it occurs consecutively",
+                                            "• An image may not have many sequences of the same colour",
+                                            "• It would need to store each colour and then the count/number 1 which adds data",
+                                            "Example:",
+                                            "• Red-Green-Blue would become Red 1 Green 1 Blue 1"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "3",
+                name: "Hardware",
+                notes: [
+                    "Primary storage (RAM) is volatile and fast; secondary storage (HDD/SSD) is non-volatile and slower.",
+                    "Embedded systems are efficient but inflexible, used in appliances.",
+                    "Hardware like magnetic disks use platters; buffers smooth data transfer in printers.",
+                    "RAM (volatile) stores programs; ROM (non-volatile) holds firmware.",
+                    "SRAM is fast for cache; DRAM is cheaper for main memory.",
+                    "PROM is one-time programmable; EPROM and EEPROM are reprogrammable.",
+                    "Control systems use sensors and actuators with feedback for automation."
+                ],
+                subtopics: [
+                    {
+                        number: "3.1",
+                        name: "Computers and Their Components",
+                        points: [
+                            {
+                                point: "Explain the differences between Random Access Memory (RAM) and Read Only Memory (ROM)",
+                                notes: "No additional notes provided",
+                                examQuestions: [
+                                    {
+                                        question: "This computer has both Read Only Memory (ROM) and Random Access Memory (RAM). Describe the contents of the ROM in the central computer.",
+                                        paperReference: "9618/11/M/J/23 Q4(a)(i)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark each to max 2",
+                                            "• Stores the bootstrap program // start-up instructions for the central computer // BIOS",
+                                            "• Stores the start-up instructions for the CCTV system/cameras // firmware for CCTV",
+                                            "• Stores the kernel of the Operating System // stores parts of the Operating System"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Explain the differences between Static RAM (SRAM) and Dynamic RAM (DRAM)",
+                                notes: "Including the use of SRAM and DRAM in a range of devices and systems and the reasons for using one instead of the other depending on the device and its use",
+                                examQuestions: [
+                                    {
+                                        question: "The central computer has Dynamic RAM (DRAM). Identify two advantages of using DRAM instead of Static RAM (SRAM).",
+                                        paperReference: "9618/11/M/J/23 Q4(a)(ii)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark each to max 2",
+                                            "• Costs less per unit",
+                                            "• Higher storage density",
+                                            "• Simple design – uses fewer transistors"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Describe the principal operations of hardware devices",
+                                notes: "Including Laser printer, 3D printer, microphone, speakers, magnetic hard disk, solid state (flash) memory, optical disc reader/writer, touchscreen, virtual reality headset",
+                                examQuestions: [
+                                    {
+                                        question: "The central computer stores the video files on secondary storage. Describe two reasons why magnetic storage is more appropriate than solid state storage for this computer.",
+                                        paperReference: "9618/11/M/J/23 Q4(b)",
+                                        marks: 4,
+                                        markScheme: [
+                                            "1 mark for reason, 1mark for application/justification",
+                                            "• The computer will have a large number of read/write operations because it is working all the time",
+                                            ".. magnetic storage has more longevity",
+                                            "• Magnetic storage costs less per storage unit",
+                                            "… videos are large files and therefore very large storage capacity is required"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Show an understanding of monitoring and control systems",
+                                notes: "Including difference between monitoring and control, use of sensors (temperature, pressure, infra-red, sound) and actuators, importance of feedback",
+                                examQuestions: [
+                                    {
+                                        question: "The CCTV system uses Artificial Intelligence (AI) to identify the presence of a person in the house and to track their movements. Describe how AI is used in this system.",
+                                        paperReference: "9618/11/M/J/23 Q4(c)",
+                                        marks: 3,
+                                        markScheme: [
+                                            "1 mark each to max 3",
+                                            "Examples:",
+                                            "• Uses image recognition",
+                                            "• Monitors every image taken to identify matching images/shapes/features to a 'person' …",
+                                            "• … starts recording to secondary storage/permanently when a person is identified",
+                                            "• System identifies direction of movement of person and uses this to decide where/how to move the camera/record",
+                                            "• System identifies other cameras to start recording based on direction of movement"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "3.2",
+                        name: "Logic Gates and Logic Circuits",
+                        points: [
+                            {
+                                point: "Understand and define the functions of NOT, AND, OR, NAND, NOR, and XOR (EOR) gates",
+                                notes: "No additional notes provided",
+                                examQuestions: [
+                                    {
+                                        question: "Describe the function of the NAND and NOR logic gates.",
+                                        paperReference: "9618/11/M/J/23 Q5(b)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark each",
+                                            "NAND: 0 is only output when both inputs are 1 // 1 is only output when none, or (either) one of the inputs is 1",
+                                            "NOR: 1 is only output when both inputs are 0 // 0 is only output when (either) one or both inputs are 1"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Construct a logic circuit",
+                                notes: "From a problem statement, a logic expression, a truth table",
+                                examQuestions: [
+                                    {
+                                        question: "Draw the logic circuit for this logic expression: T = (NOT A OR B) XOR (C NAND D)",
+                                        paperReference: "9618/11/M/J/23 Q5(a)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for 2 gates",
+                                            "2 marks for all 4 gates",
+                                            "[Logic circuit diagram showing: NOT gate for A, OR gate for NOT A and B, NAND gate for C and D, XOR gate combining outputs]"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "4",
+                name: "Processor Fundamentals",
+                notes: [
+                    "Von Neumann model stores instructions and data in memory for sequential execution.",
+                    "Registers like PC (next instruction) and MAR (data address) manage CPU operations.",
+                    "ALU performs calculations; CU decodes instructions; buses transfer data.",
+                    "Performance depends on clock speed, cores, and cache size.",
+                    "USB supports data/power; HDMI handles video/audio.",
+                    "Fetch-Execute cycle fetches and processes instructions using register transfers.",
+                    "Interrupts (e.g., keyboard input) pause execution to handle urgent tasks."
+                ],
+                subtopics: [
+                    {
+                        number: "4.1",
+                        name: "Central Processing Unit (CPU) Architecture",
+                        points: [
+                            {
+                                point: "Show understanding of the purpose of interrupts",
+                                notes: "Including possible causes of interrupts, applications of interrupts, use of an Interrupt Service Routine (ISR), when interrupts are detected during the fetch-execute cycle, how interrupts are handled",
+                                examQuestions: [
+                                    {
+                                        question: "An interrupt is generated when a key is pressed on a computer keyboard. Explain how the computer handles this interrupt.",
+                                        paperReference: "9618/11/M/J/23 Q6",
+                                        marks: 5,
+                                        markScheme: [
+                                            "1 mark each to max 5",
+                                            "• An interrupt flag is raised in the (interrupt) register",
+                                            "• At the end of the current FE cycle // at the start of the next FE cycle",
+                                            "• The system checks the interrupt register for higher priority interrupts than current process",
+                                            "• If true, it stores the current contents of the registers on the stack",
+                                            "• The appropriate interrupt service routine (ISR) for the key press is called",
+                                            "• The input data from the keyboard is processed",
+                                            "• The contents of the registers are restored from the stack",
+                                            "• ... and control is passed back to previous process"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "4.3",
+                        name: "Bit Manipulation",
+                        points: [
+                            {
+                                point: "Show understanding of and perform binary shifts",
+                                notes: "Logical, arithmetic, and cyclic. Left shift, right shift",
+                                examQuestions: [
+                                    {
+                                        question: "Show the result of a 3-place right logical shift on the binary number: 11001100",
+                                        paperReference: "9618/11/M/J/23 Q3(d)(vi)",
+                                        marks: 1,
+                                        markScheme: [
+                                            "00011001"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "5",
+                name: "System Software",
+                notes: [
+                    "Operating Systems manage hardware, software, and resources for efficient operation.",
+                    "OS tasks include memory, process, and file management.",
+                    "Utility software like defragmentation improves disk performance.",
+                    "Program libraries (e.g., DLLs) provide reusable code, saving development time.",
+                    "Assemblers translate assembly to machine code; compilers are faster, interpreters aid debugging.",
+                    "IDEs offer coding aids like prompts and syntax checks."
+                ],
+                subtopics: [
+                    {
+                        number: "5.1",
+                        name: "Operating Systems",
+                        points: [
+                            {
+                                point: "Explain the key management tasks carried out by the Operating System",
+                                notes: "Including memory management, file management, security management, hardware management (input/output/peripherals), process management",
+                                examQuestions: [
+                                    {
+                                        question: "Describe how the Operating System manages the peripheral hardware devices of the computer.",
+                                        paperReference: "9618/11/M/J/23 Q3(a)",
+                                        marks: 4,
+                                        markScheme: [
+                                            "1 mark each to max 4",
+                                            "Examples:",
+                                            "• Installs device drivers",
+                                            "… to allow communication between peripherals and computer",
+                                            "• Sends data and receives data to and from peripherals",
+                                            "… such as to an output device and from an input device/by example",
+                                            "• Handles buffers for transfer of data",
+                                            "… to ensure smooth transfer between devices that transmit and receive at different speeds",
+                                            "• Manages interrupts / signals from the device"
+                                        ]
+                                    },
+                                    {
+                                        question: "Hardware management is one key management task carried out by the Operating System. Identify two other key management tasks carried out by the Operating System.",
+                                        paperReference: "9618/11/M/J/23 Q3(b)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark each to max 2",
+                                            "• Memory management",
+                                            "• File management",
+                                            "• Security management",
+                                            "• Process management",
+                                            "• Error checking and recovery"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Show understanding of the need for typical utility software provided with an Operating System",
+                                notes: "Including disk formatter, virus checker, defragmentation software, disk contents analysis/disk repair software, file compression, back-up software",
+                                examQuestions: [
+                                    {
+                                        question: "The Operating System has utility software including defragmentation software. Explain how defragmentation can improve the performance of the computer.",
+                                        paperReference: "9618/11/M/J/23 Q3(c)",
+                                        marks: 3,
+                                        markScheme: [
+                                            "1 mark each to max 3",
+                                            "• Rearranges blocks of individual files (on the HDD) so they are contiguous // moves the free space together",
+                                            "• Accessing each file is faster",
+                                            "…because there is no need to search for the next fragment / block of the file",
+                                            "…so less head movement is needed"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "8",
+                name: "Databases",
+                notes: [
+                    "File-based systems suffer from redundancy and inconsistency; relational databases use keys and integrity rules.",
+                    "Primary keys identify records; foreign keys link tables.",
+                    "Primary keys identify records; foreign keys link tables.",
+                    "Normalization (1NF-3NF) eliminates dependencies for efficient design.",
+                    "DBMS manages data with dictionaries and query processors.",
+                    "DDL (e.g., CREATE TABLE) defines structures; DML (e.g., SELECT) manipulates data."
+                ],
+                subtopics: [
+                    {
+                        number: "8.1",
+                        name: "Database Concepts",
+                        points: [
+                            {
+                                point: "Show understanding of and use the terminology associated with a relational database model",
+                                notes: "Including entity, table, record, field, tuple, attribute, primary key, candidate key, secondary key, foreign key, relationship (one-to-many, one-to-one, many-to-many), referential integrity, indexing",
+                                examQuestions: [
+                                    {
+                                        question: "The database, Birds, stores information about the types of bird and the people who have seen them. Data about each bird seen is stored with its location and data about the person who saw the bird. Database Birds has the following tables: BIRD_TYPE(BirdID, Name, Size) BIRD_SEEN(SeenID, BirdID, Date, Location, PersonID) PERSON(PersonID, FirstName, LastName, EmailAddress) Complete the table by identifying two foreign keys and the database table where each is found.",
+                                        paperReference: "9618/11/M/J/23 Q2(b)(i)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for each field name and table",
+                                            "Foreign key | Database table",
+                                            "BirdID | BIRD_SEEN",
+                                            "PersonID | BIRD_SEEN"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Show understanding of the normalisation process",
+                                notes: "First Normal Form (1NF), Second Normal Form (2NF), Third Normal Form (3NF)",
+                                examQuestions: [
+                                    {
+                                        question: "The database Birds has been normalised. Draw one line from each Normal Form to the most appropriate definition.",
+                                        paperReference: "9618/11/M/J/23 Q2(b)(ii)",
+                                        marks: 1,
+                                        markScheme: [
+                                            "1 mark for all 3 correct lines",
+                                            "First Normal Form (1NF): There are no repeating groups of attributes.",
+                                            "Second Normal Form (2NF): There are no partial dependencies.",
+                                            "Third Normal Form (3NF): All fields are fully dependent on the primary key."
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "8.2",
+                        name: "Database Management Systems (DBMS)",
+                        points: [
+                            {
+                                point: "Show understanding of the features provided by a DBMS that address the issues of a file-based approach",
+                                notes: "Including data management (maintaining a data dictionary), data modelling, logical schema, data integrity, data security (backup procedures, access rights)",
+                                examQuestions: [
+                                    {
+                                        question: "State what is meant by a data dictionary and give one example of an item typically found in a data dictionary.",
+                                        paperReference: "9618/11/M/J/23 Q2(a)(i)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for definition:",
+                                            "• Data about the data in the database // data about the structure of the database // metadata for a database",
+                                            "1 mark for a suitable example",
+                                            "Examples:",
+                                            "• table names",
+                                            "• data types",
+                                            "• field names"
+                                        ]
+                                    },
+                                    {
+                                        question: "State what is meant by data integrity and give one example of how this is implemented in a database.",
+                                        paperReference: "9618/11/M/J/23 Q2(a)(ii)",
+                                        marks: 2,
+                                        markScheme: [
+                                            "1 mark for definition",
+                                            "• Methods of making sure the data is consistent",
+                                            "1 mark for example",
+                                            "Examples:",
+                                            "• Enforcing referential integrity",
+                                            "• If data in one table is deleted/edited all tables are updated // cascading update/delete",
+                                            "• Validation/verification rules"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        number: "8.3",
+                        name: "Data Definition Language (DDL) and Data Manipulation Language (DML)",
+                        points: [
+                            {
+                                point: "Understand given SQL (DDL) statements and be able to write simple SQL (DDL) statements",
+                                notes: "Create a database (CREATE DATABASE), Create a table definition (CREATE TABLE), change a table definition (ALTER TABLE), add primary/foreign keys",
+                                examQuestions: [
+                                    {
+                                        question: "Part of the database table BIRD_TYPE is shown: [Table with BirdID, Name, Size columns and 4 rows of data]. The database only supports these data types: character, varchar, Boolean, integer, real, date, time. Write a Structured Query Language (SQL) script to define the table Bird_Type.",
+                                        paperReference: "9618/11/M/J/23 Q2(b)(iii)",
+                                        marks: 4,
+                                        markScheme: [
+                                            "1 mark each",
+                                            "• CREATE TABLE start and end bracket",
+                                            "• Bird ID as CHAR/VARCHAR",
+                                            "• Name and size as VARCHAR/CHAR",
+                                            "• Bird ID as primary key",
+                                            "Example answer:",
+                                            "CREATE TABLE BIRD_TYPE(",
+                                            "BirdID CHAR(4) NOT NULL,",
+                                            "Name VARCHAR(9),",
+                                            "Size VARCHAR(6),",
+                                            "PRIMARY KEY (BirdID)",
+                                            ");"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                point: "Write an SQL script to query or modify data (DML) which are stored in (at most two) database tables",
+                                notes: "Queries: SELECT, WHERE, ORDER BY, GROUP BY, INNER JOIN, SUM, COUNT, AVG. Maintenance: INSERT INTO, DELETE FROM, UPDATE",
+                                examQuestions: [
+                                    {
+                                        question: "The database tables are repeated here for reference: BIRD_TYPE(BirdID, Name, Size) BIRD_SEEN(SeenID, BirdID, Date, Location, PersonID) PERSON(PersonID, FirstName, LastName, EmailAddress). Complete the SQL script to return the number of birds of each size seen by the person with the ID of J_123.",
+                                        paperReference: "9618/11/M/J/23 Q2(b)(iv)",
+                                        marks: 5,
+                                        markScheme: [
+                                            "1 mark for each correctly completed space",
+                                            "SELECT BIRD_TYPE.Size, COUNT(BIRD_TYPE.BirdID) AS NumberOfBirds",
+                                            "FROM BIRD_TYPE, BIRD_SEEN",
+                                            "WHERE BIRD_SEEN.PersonID = \"J_123\"",
+                                            "AND BIRD_TYPE.BirdID = BIRD_SEEN.BirdID",
+                                            "GROUP BY BIRD_TYPE.Size;"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        
+        // State management
+        let questionStates = {};
+        let activeView = 'syllabus';
+        let searchTerm = '';
+
+        // Initialize and load states from localStorage
+        function initializeStates() {
+            const savedStates = JSON.parse(localStorage.getItem('questionStates')) || {};
+            const initializedStates = {};
+            
+            topics.forEach(topic => {
+                topic.isExpanded = false;
+                topic.subtopics.forEach(subtopic => {
+                    subtopic.isExpanded = false;
+                    subtopic.points.forEach((point, pointIndex) => {
+                        point.isExpanded = false;
+                        point.examQuestions.forEach((q, qIndex) => {
+                            const qId = `${topic.name}-${subtopic.name}-${pointIndex}-${qIndex}`;
+                            initializedStates[qId] = savedStates[qId] || { confidence: 'red', mastered: false };
+                        });
+                    });
+                });
+            });
+            
+            questionStates = initializedStates;
+            updateProgress();
+        }
+
+        // Update progress metrics
+        function updateProgress() {
+            const totalQuestions = Object.keys(questionStates).length;
+            const masteredQuestions = Object.values(questionStates).filter(s => s.mastered).length;
+            const completionPercentage = totalQuestions ? ((masteredQuestions / totalQuestions) * 100).toFixed(1) : 0;
+            
+            document.getElementById('total-questions').textContent = totalQuestions;
+            document.getElementById('mastered-questions').textContent = masteredQuestions;
+            document.getElementById('completion-percentage').textContent = `${completionPercentage}%`;
+        }
+
+        // Save states to localStorage
+        function saveStates() {
+            localStorage.setItem('questionStates', JSON.stringify(questionStates));
+        }
+
+        // Toggle expansion
+        function toggleExpand(type, topicIndex, subtopicIndex, pointIndex) {
+            if (type === 'topic') {
+                topics[topicIndex].isExpanded = !topics[topicIndex].isExpanded;
+            } else if (type === 'subtopic') {
+                topics[topicIndex].subtopics[subtopicIndex].isExpanded = !topics[topicIndex].subtopics[subtopicIndex].isExpanded;
+            } else if (type === 'point') {
+                topics[topicIndex].subtopics[subtopicIndex].points[pointIndex].isExpanded = !topics[topicIndex].subtopics[subtopicIndex].points[pointIndex].isExpanded;
+            }
+            
+            renderContent();
+        }
+
+        // Update question state
+        function updateQuestionState(qId, key, value) {
+            questionStates[qId] = {
+                ...questionStates[qId],
+                [key]: value
+            };
+            
+            saveStates();
+            updateProgress();
+            renderContent();
+        }
+
+        // Filter topics based on search term
+        function getFilteredTopics() {
+            if (!searchTerm) return topics;
+            
+            return topics.filter(topic => {
+                const searchLower = searchTerm.toLowerCase();
+                
+                // Search in topic name and notes
+                if (topic.name.toLowerCase().includes(searchLower)) return true;
+                if (topic.notes.some(note => note.toLowerCase().includes(searchLower))) return true;
+                
+                // Search in subtopics
+                return topic.subtopics.some(subtopic => {
+                    if (subtopic.name.toLowerCase().includes(searchLower)) return true;
+                    
+                    // Search in points
+                    return subtopic.points.some(point => {
+                        if (point.point.toLowerCase().includes(searchLower)) return true;
+                        if (point.notes.toLowerCase().includes(searchLower)) return true;
+                        
+                        // Search in exam questions
+                        return point.examQuestions.some(q => 
+                            q.question.toLowerCase().includes(searchLower) || 
+                            q.paperReference.toLowerCase().includes(searchLower) ||
+                            q.markScheme.some(m => m.toLowerCase().includes(searchLower))
+                        );
+                    });
+                });
+            });
+        }
+
+        // Build the syllabus view
+        function buildSyllabusView() {
+            const filteredTopics = getFilteredTopics();
+            let html = '';
+            
+            filteredTopics.forEach((topic, topicIndex) => {
+                html += `
+                    <div class="mb-6 bg-white border rounded-xl shadow-sm overflow-hidden">
+                        <!-- Topic Header -->
+                        <div class="bg-gray-50 p-4 border-b cursor-pointer flex justify-between items-center" 
+                             onclick="toggleExpand('topic', ${topicIndex})">
+                            <h2 class="font-semibold text-base md:text-lg text-gray-800">
+                                ${topic.number}. ${topic.name}
+                            </h2>
+                            <svg class="w-5 h-5 text-gray-500 transform transition-transform ${topic.isExpanded ? 'rotate-180' : ''}" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                `;
+                
+                // Topic Content (if expanded)
+                if (topic.isExpanded) {
+                    html += `
+                        <div class="p-4 space-y-6">
+                            <!-- Topic Notes -->
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 mb-2">Topic Notes</h3>
+                                <ul class="bg-gray-50 p-3 rounded-lg text-xs md:text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                    ${topic.notes.map(note => `<li>${note}</li>`).join('')}
+                                </ul>
+                            </div>
+                    `;
+                    
+                    // Subtopics
+                    topic.subtopics.forEach((subtopic, subtopicIndex) => {
+                        html += `
+                            <div class="border rounded-lg overflow-hidden">
+                                <!-- Subtopic Header -->
+                                <div class="bg-gray-50 p-3 border-b cursor-pointer flex justify-between items-center"
+                                     onclick="toggleExpand('subtopic', ${topicIndex}, ${subtopicIndex})">
+                                    <h3 class="font-medium text-sm md:text-base text-gray-800">
+                                        ${subtopic.number} ${subtopic.name}
+                                    </h3>
+                                    <svg class="w-4 h-4 text-gray-500 transform transition-transform ${subtopic.isExpanded ? 'rotate-180' : ''}" 
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                        `;
+                        
+                        // Subtopic Content (if expanded)
+                        if (subtopic.isExpanded) {
+                            html += `<div class="p-3 space-y-4">`;
+                            
+                            // Points
+                            subtopic.points.forEach((point, pointIndex) => {
+                                html += `
+                                    <div class="border rounded-lg">
+                                        <!-- Point Header -->
+                                        <div class="bg-gray-50 p-3 cursor-pointer flex justify-between items-center"
+                                             onclick="toggleExpand('point', ${topicIndex}, ${subtopicIndex}, ${pointIndex})">
+                                            <p class="text-xs md:text-sm font-medium text-gray-800">${point.point}</p>
+                                            <div class="flex items-center space-x-2">
+                                                <button 
+                                                    class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200"
+                                                    onclick="createFlashcards(${topicIndex}, ${subtopicIndex}, ${pointIndex}); event.stopPropagation();"
+                                                >
+                                                    Flashcards
+                                                </button>
+                                                <svg class="w-4 h-4 text-gray-500 transform transition-transform ${point.isExpanded ? 'rotate-180' : ''}" 
+                                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                `;
+                                
+                                // Point Content (if expanded)
+                                if (point.isExpanded) {
+                                    html += `<div class="p-3 space-y-3">`;
+                                    
+                                    // Notes
+                                    if (point.notes) {
+                                        html += `
+                                            <div class="bg-gray-50 p-2 rounded-lg">
+                                                <p class="text-xs md:text-sm text-gray-600">${point.notes}</p>
+                                            </div>
+                                        `;
+                                    }
+                                    
+                                    // Exam Questions
+                                    if (point.examQuestions.length > 0) {
+                                        html += `<div class="space-y-3"><h4 class="text-xs font-medium text-gray-500">Exam Questions</h4>`;
+                                        
+                                        point.examQuestions.forEach((q, qIndex) => {
+                                            const qId = `${topic.name}-${subtopic.name}-${pointIndex}-${qIndex}`;
+                                            const state = questionStates[qId] || { confidence: 'red', mastered: false };
+                                            const confidenceColor = state.confidence === 'red' ? 'border-red-200 bg-red-50' : 
+                                                                    state.confidence === 'amber' ? 'border-yellow-200 bg-yellow-50' : 
+                                                                    'border-green-200 bg-green-50';
+                                            
+                                            html += `
+                                                <div class="p-3 border rounded-lg ${confidenceColor}">
+                                                    <div class="flex justify-between items-start mb-2">
+                                                        <p class="text-xs md:text-sm font-medium text-gray-800">${q.question}</p>
+                                                        <div class="flex flex-col items-end ml-2">
+                                                            <span class="text-xs text-gray-500 mb-1">${q.paperReference}</span>
+                                                            <span class="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded">${q.marks} ${q.marks === 1 ? 'mark' : 'marks'}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <textarea 
+                                                        id="answer-${qId}"
+                                                        class="w-full p-2 border border-gray-300 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 mb-3"
+                                                        placeholder="Type your answer..."
+                                                        rows="3"
+                                                    ></textarea>
+                                                    
+                                                    <div class="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
+                                                        <div class="flex items-center space-x-2">
+                                                            <button 
+                                                                class="text-xs md:text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 font-medium"
+                                                                onclick="showAnswer('${qId}', ${topicIndex}, ${subtopicIndex}, ${pointIndex}, ${qIndex})"
+                                                            >
+                                                                Check Answer
+                                                            </button>
+                                                            <div class="flex space-x-1">
+                                                                <button 
+                                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'red' ? 'ring-2 ring-gray-400' : ''}"
+                                                                    style="background-color: #ef4444"
+                                                                    title="Not Confident"
+                                                                    onclick="updateQuestionState('${qId}', 'confidence', 'red')"
+                                                                ></button>
+                                                                <button 
+                                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'amber' ? 'ring-2 ring-gray-400' : ''}"
+                                                                    style="background-color: #f59e0b"
+                                                                    title="Somewhat Confident"
+                                                                    onclick="updateQuestionState('${qId}', 'confidence', 'amber')"
+                                                                ></button>
+                                                                <button 
+                                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'green' ? 'ring-2 ring-gray-400' : ''}"
+                                                                    style="background-color: #10b981"
+                                                                    title="Confident"
+                                                                    onclick="updateQuestionState('${qId}', 'confidence', 'green')"
+                                                                ></button>
+                                                            </div>
+                                                        </div>
+                                                        <label class="flex items-center space-x-1 text-xs md:text-sm text-gray-600">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                class="h-4 w-4 text-blue-600 rounded"
+                                                                ${state.mastered ? 'checked' : ''}
+                                                                onclick="updateQuestionState('${qId}', 'mastered', !${state.mastered})"
+                                                            />
+                                                            <span>Mastered</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        });
+                                        
+                                        html += `</div>`;
+                                    }
+                                    
+                                    html += `</div>`;
+                                }
+                                
+                                html += `</div>`;
+                            });
+                            
+                            html += `</div>`;
+                        }
+                        
+                        html += `</div>`;
+                    });
+                    
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            return html;
+        }
+
+        // Build the exam questions view
+        function buildExamQuestionsView() {
+            const filteredTopics = getFilteredTopics();
+            let html = '<div class="space-y-6">';
+            let questionCount = 0;
+            
+            filteredTopics.forEach((topic) => {
+                topic.subtopics.forEach((subtopic) => {
+                    subtopic.points.forEach((point, pointIndex) => {
+                        point.examQuestions.forEach((q, qIndex) => {
+                            questionCount++;
+                            const qId = `${topic.name}-${subtopic.name}-${pointIndex}-${qIndex}`;
+                            const state = questionStates[qId] || { confidence: 'red', mastered: false };
+                            const confidenceColor = state.confidence === 'red' ? 'border-red-200 bg-red-50' : 
+                                                   state.confidence === 'amber' ? 'border-yellow-200 bg-yellow-50' : 
+                                                   'border-green-200 bg-green-50';
+                            
+                            html += `
+                                <div class="p-4 border rounded-xl ${confidenceColor}">
+                                    <div class="flex flex-col md:flex-row justify-between mb-3">
+                                        <div>
+                                            <h3 class="font-medium text-sm md:text-base text-gray-800 mb-1">${q.question}</h3>
+                                            <p class="text-xs text-gray-500">
+                                                <span class="font-medium">${q.paperReference}</span> • 
+                                                <span>${topic.number}.${subtopic.number}</span> • 
+                                                <span class="italic">${point.point.substring(0, 50)}${point.point.length > 50 ? '...' : ''}</span>
+                                            </p>
+                                        </div>
+                                        <div class="mt-2 md:mt-0 md:ml-4 md:text-right">
+                                            <span class="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded">${q.marks} ${q.marks === 1 ? 'mark' : 'marks'}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <textarea 
+                                        id="exam-answer-${qId}"
+                                        class="w-full p-2 border border-gray-300 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 mb-3"
+                                        placeholder="Type your answer..."
+                                        rows="3"
+                                    ></textarea>
+                                    
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
+                                        <div class="flex items-center space-x-2">
+                                            <button 
+                                                class="text-xs md:text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 font-medium"
+                                                onclick="showAnswer('${qId}', ${topic.subtopics.indexOf(subtopic)}, ${subtopic.points.indexOf(point)}, ${point.examQuestions.indexOf(q)})"
+                                            >
+                                                Check Answer
+                                            </button>
+                                            <div class="flex space-x-1">
+                                                <button 
+                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'red' ? 'ring-2 ring-gray-400' : ''}"
+                                                    style="background-color: #ef4444"
+                                                    title="Not Confident"
+                                                    onclick="updateQuestionState('${qId}', 'confidence', 'red')"
+                                                ></button>
+                                                <button 
+                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'amber' ? 'ring-2 ring-gray-400' : ''}"
+                                                    style="background-color: #f59e0b"
+                                                    title="Somewhat Confident"
+                                                    onclick="updateQuestionState('${qId}', 'confidence', 'amber')"
+                                                ></button>
+                                                <button 
+                                                    class="w-5 h-5 rounded-full confidence-btn ${state.confidence === 'green' ? 'ring-2 ring-gray-400' : ''}"
+                                                    style="background-color: #10b981"
+                                                    title="Confident"
+                                                    onclick="updateQuestionState('${qId}', 'confidence', 'green')"
+                                                ></button>
+                                            </div>
+                                        </div>
+                                        <label class="flex items-center space-x-1 text-xs md:text-sm text-gray-600">
+                                            <input 
+                                                type="checkbox" 
+                                                class="h-4 w-4 text-blue-600 rounded"
+                                                ${state.mastered ? 'checked' : ''}
+                                                onclick="updateQuestionState('${qId}', 'mastered', !${state.mastered})"
+                                            />
+                                            <span>Mastered</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    });
+                });
+            });
+            
+            if (questionCount === 0) {
+                html += `
+                    <div class="p-6 bg-white rounded-xl border text-center">
+                        <p class="text-gray-600">No exam questions match your search criteria.</p>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            return html;
+        }
+
+        // Build the statistics view
+        function buildStatsView() {
+            let html = `
+                <div class="bg-white p-6 rounded-xl border">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Study Progress Analytics</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Overall Progress -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-3">Overall Progress</h3>
+                            <div class="h-6 bg-gray-200 rounded-full">
+                                <div 
+                                    class="h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs text-white font-medium"
+                                    style="width: ${(Object.values(questionStates).filter(s => s.mastered).length / Object.keys(questionStates).length) * 100}%"
+                                >
+                                    ${(Object.values(questionStates).filter(s => s.mastered).length / Object.keys(questionStates).length * 100).toFixed(0)}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Confidence Breakdown -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-3">Confidence Levels</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                                    <span class="text-sm text-gray-600">Not Confident</span>
+                                    <p class="text-xl font-semibold text-gray-800">
+                                        ${Object.values(questionStates).filter(s => s.confidence === 'red').length}
+                                        <span class="text-sm text-gray-500 font-normal">questions</span>
+                                    </p>
+                                </div>
+                                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                    <span class="text-sm text-gray-600">Somewhat Confident</span>
+                                    <p class="text-xl font-semibold text-gray-800">
+                                        ${Object.values(questionStates).filter(s => s.confidence === 'amber').length}
+                                        <span class="text-sm text-gray-500 font-normal">questions</span>
+                                    </p>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                                    <span class="text-sm text-gray-600">Confident</span>
+                                    <p class="text-xl font-semibold text-gray-800">
+                                        ${Object.values(questionStates).filter(s => s.confidence === 'green').length}
+                                        <span class="text-sm text-gray-500 font-normal">questions</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Topics Progress -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-3">Progress by Topic</h3>
+                            <div class="space-y-3">
+                                ${topics.map(topic => {
+                                    // Calculate topic progress
+                                    let topicQuestions = 0;
+                                    let topicMastered = 0;
+                                    
+                                    topic.subtopics.forEach(subtopic => {
+                                        subtopic.points.forEach((point, pointIndex) => {
+                                            point.examQuestions.forEach((q, qIndex) => {
+                                                const qId = `${topic.name}-${subtopic.name}-${pointIndex}-${qIndex}`;
+                                                topicQuestions++;
+                                                if (questionStates[qId]?.mastered) topicMastered++;
+                                            });
+                                        });
+                                    });
+                                    
+                                    const progress = topicQuestions ? (topicMastered / topicQuestions) * 100 : 0;
+                                    
+                                    return `
+                                        <div>
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-medium text-gray-700">${topic.number}. ${topic.name}</span>
+                                                <span class="text-xs text-gray-500">${topicMastered}/${topicQuestions} questions</span>
+                                            </div>
+                                            <div class="h-4 bg-gray-200 rounded-full">
+                                                <div 
+                                                    class="h-4 bg-blue-600 rounded-full"
+                                                    style="width: ${progress}%"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        // Render content based on active view
+        function renderContent() {
+            const container = document.getElementById('content-container');
+            
+            if (activeView === 'syllabus') {
+                container.innerHTML = buildSyllabusView();
+            } else if (activeView === 'exam') {
+                container.innerHTML = buildExamQuestionsView();
+            } else if (activeView === 'stats') {
+                container.innerHTML = buildStatsView();
+            }
+        }
+
+        // Create flashcards for a specific syllabus point
+        function createFlashcards(topicIndex, subtopicIndex, pointIndex) {
+            const point = topics[topicIndex].subtopics[subtopicIndex].points[pointIndex];
+            const modal = document.getElementById('flashcards-modal');
+            const content = document.getElementById('flashcards-content');
+            
+            content.innerHTML = '';
+            
+            if (point.examQuestions.length === 0) {
+                content.innerHTML = `<p class="text-gray-600 text-center">No exam questions available for this syllabus point.</p>`;
+            } else {
+                point.examQuestions.forEach((q, index) => {
+                    content.innerHTML += `
+                        <div class="flashcard" onclick="toggleFlashcard(this)">
+                            <div class="flashcard-inner">
+                                <div class="flashcard-front border border-gray-200 rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <p class="text-sm font-medium text-gray-800">${q.question}</p>
+                                        <div class="flex flex-col items-end ml-2">
+                                            <span class="text-xs text-gray-500 mb-1">${q.paperReference}</span>
+                                            <span class="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded">${q.marks} ${q.marks === 1 ? 'mark' : 'marks'}</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2 italic">Click to reveal answer</p>
+                                </div>
+                                <div class="flashcard-back border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <h3 class="text-sm font-medium text-gray-700 mb-2">Mark Scheme:</h3>
+                                    <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                                        ${q.markScheme.map(item => {
+                                            if (item.startsWith('•')) {
+                                                return `<li>${item.substring(1).trim()}</li>`;
+                                            } else if (item.includes(':')) {
+                                                return `<li><strong>${item.split(':')[0]}:</strong> ${item.split(':')[1]}</li>`;
+                                            } else {
+                                                return `<li>${item}</li>`;
+                                            }
+                                        }).join('')}
+                                    </ul>
+                                    <p class="text-xs text-gray-500 mt-4 italic">Click to return to question</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Toggle flashcard flip
+        function toggleFlashcard(flashcard) {
+            flashcard.classList.toggle('flipped');
+        }
+
+        // Show answer modal
+        function showAnswer(qId, topicIndex, subtopicIndex, pointIndex, qIndex) {
+            const modal = document.getElementById('answer-modal');
+            const modalQuestion = document.getElementById('modal-question');
+            const marksAvailable = document.getElementById('marks-available');
+            const markScheme = document.getElementById('mark-scheme');
+            
+            // Find the question data
+            const q = topics[topicIndex].subtopics[subtopicIndex].points[pointIndex].examQuestions[qIndex];
+            
+            modalQuestion.textContent = q.question;
+            marksAvailable.textContent = `${q.marks} ${q.marks === 1 ? 'mark' : 'marks'} available`;
+            
+            // Build mark scheme content
+            markScheme.innerHTML = '';
+            q.markScheme.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'ml-4 pl-1';
+                
+                if (item.startsWith('•')) {
+                    li.innerHTML = `<span><span class="inline-block w-1 h-1 rounded-full bg-gray-500 mr-2"></span>${item.substring(1).trim()}</span>`;
+                } else if (item.includes(':')) {
+                    li.innerHTML = `<strong>${item.split(':')[0]}:</strong> ${item.split(':')[1]}`;
+                } else {
+                    li.textContent = item;
+                }
+                
+                markScheme.appendChild(li);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize
+            initializeStates();
+            renderContent();
+            
+            // Search input
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                renderContent();
+            });
+            
+            // View buttons
+            document.getElementById('syllabus-view-btn').addEventListener('click', () => {
+                document.getElementById('syllabus-view-btn').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('syllabus-view-btn').classList.remove('bg-gray-200', 'text-gray-800');
+                
+                document.getElementById('exam-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('exam-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                document.getElementById('stats-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('stats-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                activeView = 'syllabus';
+                renderContent();
+            });
+            
+            document.getElementById('exam-view-btn').addEventListener('click', () => {
+                document.getElementById('exam-view-btn').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('exam-view-btn').classList.remove('bg-gray-200', 'text-gray-800');
+                
+                document.getElementById('syllabus-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('syllabus-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                document.getElementById('stats-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('stats-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                activeView = 'exam';
+                renderContent();
+            });
+            
+            document.getElementById('stats-view-btn').addEventListener('click', () => {
+                document.getElementById('stats-view-btn').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('stats-view-btn').classList.remove('bg-gray-200', 'text-gray-800');
+                
+                document.getElementById('syllabus-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('syllabus-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                document.getElementById('exam-view-btn').classList.add('bg-gray-200', 'text-gray-800');
+                document.getElementById('exam-view-btn').classList.remove('bg-blue-600', 'text-white');
+                
+                activeView = 'stats';
+                renderContent();
+            });
+            
+            // Modal close buttons
+            document.getElementById('close-flashcards').addEventListener('click', () => {
+                document.getElementById('flashcards-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('close-answer').addEventListener('click', () => {
+                document.getElementById('answer-modal').classList.add('hidden');
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (e) => {
+                const flashcardsModal = document.getElementById('flashcards-modal');
+                const answerModal = document.getElementById('answer-modal');
+                
+                if (e.target === flashcardsModal) {
+                    flashcardsModal.classList.add('hidden');
+                }
+                
+                if (e.target === answerModal) {
+                    answerModal.classList.add('hidden');
+                }
+            });
+        });
+
+        // Make functions accessible to inline event handlers
+        window.toggleExpand = toggleExpand;
+        window.updateQuestionState = updateQuestionState;
+        window.createFlashcards = createFlashcards;
+        window.toggleFlashcard = toggleFlashcard;
+        window.showAnswer = showAnswer;
+    </script>
+</body>
+</html>
