@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9618 Paper 1 Study Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f9fafb;
+        }
+        .question-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .flashcard {
+            transition: all 0.2s ease-in-out;
+        }
+        .flashcard:hover {
+            background-color: #f3f4f6;
+        }
+        .confidence-btn {
+            transition: transform 0.2s;
+        }
+        .confidence-btn:hover {
+            transform: scale(1.2);
+        }
+        .point-note, .topic-note {
+            background-color: #f8fafc;
+            border-left: 4px solid #e2e8f0;
+            padding: 8px 12px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="max-w-5xl mx-auto p-6">
+        <!-- Header -->
+        <div class="mb-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">9618 Paper 1 Study Tool</h1>
+            <p class="text-gray-600">Interactive study tool for Cambridge International AS & A Level Computer Science 9618 Paper 1. Master syllabus content, test your knowledge, and create flashcards.</p>
+        </div>
+
+        <!-- Progress Metrics -->
+        <div class="mb-8 bg-white p-6 rounded-xl border shadow-sm">
+            <h2 class="font-semibold text-lg text-gray-800 mb-4">Progress Overview</h2>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Total Questions</span>
+                    <p id="total-questions" class="text-xl font-semibold text-gray-800">0</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Mastered</span>
+                    <p id="mastered-questions" class="text-xl font-semibold text-gray-800">0</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <span class="text-sm text-gray-500 block">Completion</span>
+                    <p id="completion-percentage" class="text-xl font-semibold text-gray-800">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topics -->
+        <div id="topics-container" class="space-y-8"></div>
+
+        <!-- Flashcards Modal -->
+        <div id="flashcards-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Flashcards</h2>
+                    <button id="close-flashcards" class="text-gray-500 hover:text-gray-700 text-sm font-medium">Close</button>
+                </div>
+                <div id="flashcards-content" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- Answer Modal -->
+        <div id="answer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-xl max-w-lg w-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Correct Answer</h2>
+                    <button id="close-answer" class="text-gray-500 hover:text-gray-700 text-sm font-medium">Close</button>
+                </div>
+                <div id="answer-content" class="text-sm text-gray-600"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure for topics, subtopics, syllabus points, notes, and questions
+        const topics = [
+            {
+                number: "1",
+                name: "Information Representation",
+                notes: [
+                    "Binary prefixes (e.g., kibibyte = 1024 bytes) differ from decimal prefixes (e.g., kilobyte = 1000 bytes).",
+                    "Number systems include binary, denary, hexadecimal, and BCD; two's complement represents negative numbers.",
+                    "Binary addition/subtraction can cause overflow if results exceed bit limits.",
+                    "BCD is used in calculators and BIOS; hexadecimal simplifies binary representation.",
+                    "ASCII (8-bit) supports basic characters, while Unicode (up to 32-bit) handles global scripts.",
+                    "Bitmap images use pixels, resolution, and color depth; file size = width × height × bit depth.",
+                    "Vector graphics use scalable drawing objects, ideal for logos.",
+                    "Sound is digitized via sampling; higher sampling rate/resolution improves quality but increases file size.",
+                    "Compression (lossy/lossless) reduces file size; RLE is lossless for bitmaps."
+                ],
+                subtopics: [
+                    {
+                        number: "1.1",
+                        name: "Data Representation",
+                        points: [
+                            {
+                                point: "Show understanding of binary magnitudes and the difference between binary prefixes and decimal prefixes",
+                                notes: "Understand the difference between and use: kibi and kilo, mebi and mega, gibi and giga, tebi and tera"
+                            },
+                            {
+                                point: "Show understanding of different number systems",
+                                notes: "Use the binary, denary, hexadecimal number bases and Binary Coded Decimal (BCD) and one's and two's complement representation for binary numbers"
+                            },
+                            {
+                                point: "Perform binary addition and subtraction",
+                                notes: "Using positive and negative binary integers. Show understanding of how overflow can occur"
+                            },
+                            {
+                                point: "Describe practical applications where Binary Coded Decimal (BCD) and Hexadecimal are used",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of and be able to represent character data in its internal binary form, depending on the character set used",
+                                notes: "Students are expected to be familiar with ASCII, extended ASCII, and Unicode. Students will not be expected to memorise any particular character codes"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the difference between a kibibyte and a kilobyte, including their prefixes.",
+                                answer: "A kibibyte is 1024 bytes and uses a binary prefix (2^10). A kilobyte is 1000 bytes and uses a decimal prefix (10^3)."
+                            },
+                            {
+                                question: "Convert the denary number 964 into Binary Coded Decimal (BCD).",
+                                answer: "1001 0110 0100"
+                            },
+                            {
+                                question: "Convert the positive binary integer 11110010 into hexadecimal.",
+                                answer: "F2"
+                            },
+                            {
+                                question: "Convert the two's complement binary integer 11001011 into denary.",
+                                answer: "−53"
+                            },
+                            {
+                                question: "Add the binary integers 10110000 and 00011011, and explain if overflow occurs.",
+                                answer: "11001011, no overflow as the result fits within 8 bits."
+                            },
+                            {
+                                question: "Describe two practical applications of Binary Coded Decimal (BCD).",
+                                answer: "Used in electronic calculator displays and storing date/time in PC BIOS."
+                            },
+                            {
+                                question: "Explain how ASCII and Unicode differ in representing character data.",
+                                answer: "ASCII uses 7 or 8 bits for basic Latin characters (128 or 256 characters). Unicode uses up to 32 bits to support global scripts, ensuring broader character representation."
+                            }
+                        ]
+                    },
+                    {
+                        number: "1.2",
+                        name: "Multimedia",
+                        points: [
+                            {
+                                point: "Show understanding of how data for a bitmapped image are encoded",
+                                notes: "Use and understand the terms: pixel, file header, image resolution, screen resolution, colour depth/bit depth"
+                            },
+                            {
+                                point: "Perform calculations to estimate the file size for a bitmap image",
+                                notes: "Use the terms: image resolution, colour depth/bit depth"
+                            },
+                            {
+                                point: "Show understanding of the effects of changing elements of a bitmap image on the image quality and file size",
+                                notes: "Use the terms: image resolution, colour depth/bit depth"
+                            },
+                            {
+                                point: "Show understanding of how data for a vector graphic are encoded",
+                                notes: "Use the terms: drawing object, property, drawing list"
+                            },
+                            {
+                                point: "Justify the use of a bitmap image or a vector graphic for a given task",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of how sound is represented and encoded",
+                                notes: "Use the terms: sampling, sampling rate, sampling resolution, analogue and digital data"
+                            },
+                            {
+                                point: "Show understanding of the impact of changing the sampling rate and resolution",
+                                notes: "Including the impact on file size and accuracy"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Define the terms pixel, file header, and colour depth in the context of bitmap images.",
+                                answer: "Pixel: Smallest addressable element of an image, a single color dot. File header: Metadata in a bitmap file, e.g., file type or compression. Colour depth: Number of bits per pixel, determining color range."
+                            },
+                            {
+                                question: "Calculate the file size of a bitmap image with a bit depth of 8 bytes, 1500 pixels wide, and 3000 pixels high.",
+                                answer: "36 MB (1500 × 3000 × 8 / 1000 / 1000)."
+                            },
+                            {
+                                question: "Explain how increasing colour depth affects a bitmap image's quality and file size.",
+                                answer: "Increasing colour depth improves quality by allowing more colors but increases file size due to more bits per pixel."
+                            },
+                            {
+                                question: "Describe how a vector graphic is encoded, using the term drawing object.",
+                                answer: "Vector graphics are encoded as drawing objects, defined by mathematical properties (e.g., coordinates, size) in a drawing list, allowing scalable shapes without pixelation."
+                            },
+                            {
+                                question: "Justify why a vector graphic is better than a bitmap for a logo design.",
+                                answer: "Vector graphics are scalable without quality loss, ideal for logos that need resizing, while bitmaps become pixelated when scaled."
+                            },
+                            {
+                                question: "Explain how sound is represented digitally, including sampling rate.",
+                                answer: "Sound is converted from analogue to digital via sampling. Sampling rate (e.g., 44.1 kHz) is the number of samples per second, determining accuracy."
+                            },
+                            {
+                                question: "Describe the impact of increasing sampling resolution on a sound file.",
+                                answer: "Increasing sampling resolution (bits per sample) improves audio accuracy but increases file size due to more data per sample."
+                            }
+                        ]
+                    },
+                    {
+                        number: "1.3",
+                        name: "Compression",
+                        points: [
+                            {
+                                point: "Show understanding of the need for and examples of the use of compression",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of lossy and lossless compression and justify the use of a method in a given situation",
+                                notes: "Including the use of run-length encoding (RLE)"
+                            },
+                            {
+                                point: "Show understanding of how a text file, bitmap image, vector graphic, and sound file can be compressed",
+                                notes: "No additional notes provided"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain why compression is needed and give two examples of its use.",
+                                answer: "Compression reduces file size for faster transmission and storage. Examples: Compressing images for web pages, compressing videos for streaming."
+                            },
+                            {
+                                question: "Compare lossy and lossless compression, justifying when to use each.",
+                                answer: "Lossy reduces quality to save more space, suitable for images/videos where minor quality loss is acceptable. Lossless preserves all data, ideal for text or critical data. RLE is a lossless method."
+                            },
+                            {
+                                question: "Describe how a bitmap image can be compressed using a lossless method.",
+                                answer: "Run-length encoding (RLE) compresses a bitmap by storing a color value and the count of consecutive pixels, reducing file size without data loss."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "2",
+                name: "Communication",
+                notes: [
+                    "Networking devices like switches connect LAN devices; routers link networks.",
+                    "LANs are fast, local networks; WANs cover large areas with higher latency.",
+                    "Client-server centralizes control but risks single-point failure; peer-to-peer is decentralized.",
+                    "Thin-clients rely on servers; thick-clients process locally.",
+                    "Star topology is reliable for small networks; mesh suits high redundancy.",
+                    "Cloud computing offers scalability but requires internet access.",
+                    "Wired networks (copper/fibre) are secure; wireless (WiFi) offers mobility but risks interference.",
+                    "URLs locate web resources; DNS resolves domain names to IP addresses."
+                ],
+                subtopics: [
+                    {
+                        number: "2.1",
+                        name: "Networks Including the Internet",
+                        points: [
+                            {
+                                point: "Show understanding of the purpose and benefits of networking devices",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the characteristics of a LAN (local area network) and a WAN (wide area network)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Explain the client-server and peer-to-peer models of networked computers",
+                                notes: "Roles of the different computers within the network and subnetwork models. Benefits and drawbacks of each model. Justify the use of a model for a given situation"
+                            },
+                            {
+                                point: "Show understanding of thin-client and thick-client and the differences between them",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the bus, star, mesh, and hybrid topologies",
+                                notes: "Understand how packets are transmitted between two hosts for a given topology. Justify the use of a topology for a given situation"
+                            },
+                            {
+                                point: "Show understanding of cloud computing",
+                                notes: "Including the use of public and private clouds. Benefits and drawbacks of cloud computing"
+                            },
+                            {
+                                point: "Show understanding of the differences between and implications of the use of wireless and wired networks",
+                                notes: "Describe the characteristics of copper cable, fibre-optic cable, radio waves (including WiFi), microwaves, satellites"
+                            },
+                            {
+                                point: "Describe the hardware that is used to support a LAN",
+                                notes: "Including switch, server, Network Interface Card (NIC), Wireless Network Interface Card (WNIC), Wireless Access Points (WAP), cables, bridge, repeater"
+                            },
+                            {
+                                point: "Describe the role and function of a router in a network",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of Ethernet and how collisions are detected and avoided",
+                                notes: "Including Carrier Sense Multiple Access/Collision Detection (CSMA/CD)"
+                            },
+                            {
+                                point: "Show understanding of bit streaming",
+                                notes: "Methods of bit streaming, i.e., real-time and on-demand. Importance of bit rates broadband speed on bit streaming"
+                            },
+                            {
+                                point: "Show understanding of the differences between the World Wide Web (WWW) and the internet",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe the hardware that is used to support the internet",
+                                notes: "Including modems, PSTN (Public Switched Telephone Network), dedicated lines, cell phone network"
+                            },
+                            {
+                                point: "Explain the use of IP addresses in the transmission of data over the internet",
+                                notes: "Including format of an IP address (IPv4 and IPv6), use of subnetting, association with devices, public vs. private IP addresses, static vs. dynamic IP addresses"
+                            },
+                            {
+                                point: "Explain how a Uniform Resource Locator (URL) is used to locate a resource on the World Wide Web (WWW) and the role of the Domain Name Service (DNS)",
+                                notes: "No additional notes provided"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Describe the purpose of two networking devices used in a LAN.",
+                                answer: "Switch: Connects devices in a LAN, forwarding data to the correct destination. Router: Directs data between networks, e.g., LAN to WAN."
+                            },
+                            {
+                                question: "Compare the characteristics of a LAN and a WAN.",
+                                answer: "LAN: Covers a small area (e.g., office), high speed, low latency. WAN: Covers large areas (e.g., globally), slower speed, higher latency."
+                            },
+                            {
+                                question: "Explain the advantages and disadvantages of the client-server model.",
+                                answer: "Advantages: Centralized control, easier data management. Disadvantages: Single point of failure, higher setup costs."
+                            },
+                            {
+                                question: "Describe the difference between thin-client and thick-client systems.",
+                                answer: "Thin-client: Relies on a server for processing, minimal local resources. Thick-client: Performs most processing locally, requiring more resources."
+                            },
+                            {
+                                question: "Justify why a star topology is suitable for a small office network.",
+                                answer: "Star topology is reliable; if one connection fails, others remain active. Easy to manage and expand, ideal for small offices."
+                            },
+                            {
+                                question: "Explain two benefits and one drawback of cloud computing.",
+                                answer: "Benefits: Scalable resources, accessible anywhere. Drawback: Requires internet, potential security risks."
+                            },
+                            {
+                                question: "Compare wired and wireless networks, focusing on their transmission media.",
+                                answer: "Wired (copper/fibre-optic): Faster, secure, but less mobile. Wireless (WiFi/radio): Flexible, mobile, but prone to interference."
+                            },
+                            {
+                                question: "Describe how a URL and DNS work to access a website.",
+                                answer: "URL specifies a web resource (e.g., www.example.com). DNS resolves the domain name to an IP address, enabling the browser to locate the server."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "3",
+                name: "Hardware",
+                notes: [
+                    "Primary storage (RAM) is volatile and fast; secondary storage (HDD/SSD) is non-volatile and slower.",
+                    "Embedded systems are efficient but inflexible, used in appliances.",
+                    "Hardware like magnetic disks use platters; buffers smooth data transfer in printers.",
+                    "RAM (volatile) stores programs; ROM (non-volatile) holds firmware.",
+                    "SRAM is fast for cache; DRAM is cheaper for main memory.",
+                    "PROM is one-time programmable; EPROM and EEPROM are reprogrammable.",
+                    "Control systems use sensors and actuators with feedback for automation."
+                ],
+                subtopics: [
+                    {
+                        number: "3.1",
+                        name: "Computers and Their Components",
+                        points: [
+                            {
+                                point: "Show understanding of the need for input, output, primary memory, and secondary (including removable) storage",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of embedded systems",
+                                notes: "Including benefits and drawbacks of embedded systems"
+                            },
+                            {
+                                point: "Describe the principal operations of hardware devices",
+                                notes: "Including Laser printer, 3D printer, microphone, speakers, magnetic hard disk, solid state (flash) memory, optical disc reader/writer, touchscreen, virtual reality headset"
+                            },
+                            {
+                                point: "Show understanding of the use of buffers",
+                                notes: "Including their use in a range of devices and systems"
+                            },
+                            {
+                                point: "Explain the differences between Random Access Memory (RAM) and Read Only Memory (ROM)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Explain the differences between Static RAM (SRAM) and Dynamic RAM (DRAM)",
+                                notes: "Including the use of SRAM and DRAM in a range of devices and systems and the reasons for using one instead of the other depending on the device and its use"
+                            },
+                            {
+                                point: "Explain the difference between Programmable ROM (PROM), Erasable Programmable ROM (EPROM), and Electrically Erasable Programmable ROM (EEPROM)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show an understanding of monitoring and control systems",
+                                notes: "Including difference between monitoring and control, use of sensors (temperature, pressure, infra-red, sound) and actuators, importance of feedback"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain why a computer needs both primary and secondary storage.",
+                                answer: "Primary storage (RAM) holds data for active processes, fast but volatile. Secondary storage (HDD/SSD) stores data permanently, slower but non-volatile."
+                            },
+                            {
+                                question: "Describe one benefit and one drawback of embedded systems.",
+                                answer: "Benefit: Optimized for specific tasks, efficient. Drawback: Limited flexibility, hard to update."
+                            },
+                            {
+                                question: "Describe how a magnetic hard disk operates.",
+                                answer: "Data is stored on spinning platters via magnetic read/write heads, accessing data in sectors and tracks."
+                            },
+                            {
+                                question: "Explain the role of buffers in a printer.",
+                                answer: "Buffers store data temporarily, allowing smooth printing despite varying data transfer speeds from the computer."
+                            },
+                            {
+                                question: "Compare RAM and ROM in terms of their roles.",
+                                answer: "RAM: Volatile, stores running programs/data. ROM: Non-volatile, stores firmware/boot instructions."
+                            },
+                            {
+                                question: "Explain why SRAM is used in cache memory instead of DRAM.",
+                                answer: "SRAM is faster and more reliable but costlier, ideal for cache. DRAM is slower, cheaper, used for main memory."
+                            },
+                            {
+                                question: "Describe the differences between PROM, EPROM, and EEPROM.",
+                                answer: "PROM: Programmable once. EPROM: Erasable via UV light, reprogrammable. EEPROM: Electrically erasable, reprogrammable in-circuit."
+                            },
+                            {
+                                question: "Explain how a temperature control system uses sensors and feedback.",
+                                answer: "Sensors detect temperature, sending data to a controller. Actuators adjust heating/cooling based on feedback to maintain desired temperature."
+                            }
+                        ]
+                    },
+                    {
+                        number: "3.2",
+                        name: "Logic Gates and Logic Circuits",
+                        points: [
+                            {
+                                point: "Use the following logic gate symbols: NOT, AND, OR, NAND, NOR, XOR",
+                                notes: "All gates except the NOT gate will have two inputs only"
+                            },
+                            {
+                                point: "Understand and define the functions of NOT, AND, OR, NAND, NOR, and XOR (EOR) gates",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Construct the truth table for each of the logic gates above",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Construct a logic circuit",
+                                notes: "From a problem statement, a logic expression, a truth table"
+                            },
+                            {
+                                point: "Construct a truth table",
+                                notes: "From a problem statement, a logic circuit, a logic expression"
+                            },
+                            {
+                                point: "Construct a logic expression",
+                                notes: "From a problem statement, a logic circuit, a truth table"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Define the function of the NAND and NOR gates.",
+                                answer: "NAND: Outputs 0 only when both inputs are 1, else 1. NOR: Outputs 1 only when both inputs are 0, else 0."
+                            },
+                            {
+                                question: "Construct the truth table for an XOR gate with two inputs.",
+                                answer: "A=0, B=0: 0; A=0, B=1: 1; A=1, B=0: 1; A=1, B=1: 0"
+                            },
+                            {
+                                question: "Describe how a logic circuit can be derived from a logic expression.",
+                                answer: "Each operation (AND, OR, NOT, etc.) in the expression is represented by a gate, connected according to the expression's structure."
+                            }
+                        ],
+                        notes: "Questions like 'Draw the logic circuit' or 'Complete a complex truth table' are omitted as they require diagrams/tables, better suited for manual practice."
+                    }
+                ]
+            },
+            {
+                number: "4",
+                name: "Processor Fundamentals",
+                notes: [
+                    "Von Neumann model stores instructions and data in memory for sequential execution.",
+                    "Registers like PC (next instruction) and MAR (data address) manage CPU operations.",
+                    "ALU performs calculations; CU decodes instructions; buses transfer data.",
+                    "Performance depends on clock speed, cores, and cache size.",
+                    "USB supports data/power; HDMI handles video/audio.",
+                    "Fetch-Execute cycle fetches and processes instructions using register transfers.",
+                    "Interrupts (e.g., keyboard input) pause execution to handle urgent tasks."
+                ],
+                subtopics: [
+                    {
+                        number: "4.1",
+                        name: "Central Processing Unit (CPU) Architecture",
+                        points: [
+                            {
+                                point: "Show understanding of the basic Von Neumann model for a computer system and the stored program concept",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the purpose and role of registers, including the difference between general purpose and special purpose registers",
+                                notes: "Special purpose registers including Program Counter (PC), Memory Data Register (MDR), Memory Address Register (MAR), The Accumulator (ACC), Index Register (IX), Current Instruction Register (CIR), Status Register"
+                            },
+                            {
+                                point: "Show understanding of the purpose and roles of the Arithmetic and Logic Unit (ALU), Control Unit (CU), and system clock, Immediate Access Store (IAS)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of how data are transferred between various components of the computer system using the address bus, data bus, and control bus",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of how factors contribute to the performance of the computer system",
+                                notes: "Including processor type and number of cores, the bus width, clock speed, cache memory"
+                            },
+                            {
+                                point: "Understand how different ports provide connection to peripheral devices",
+                                notes: "Including connection to Universal Serial Bus (USB), High Definition Multimedia Interface (HDMI), Video Graphics Array (VGA)"
+                            },
+                            {
+                                point: "Describe the stages of the Fetch-Execute (F-E) cycle",
+                                notes: "Describe and use 'register transfer' notation to describe the F-E cycle"
+                            },
+                            {
+                                point: "Show understanding of the purpose of interrupts",
+                                notes: "Including possible causes of interrupts, applications of interrupts, use of an Interrupt Service Routine (ISR), when interrupts are detected during the fetch-execute cycle, how interrupts are handled"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the stored program concept in the Von Neumann model.",
+                                answer: "The stored program concept means instructions and data are stored in the same memory, allowing the CPU to fetch and execute them sequentially."
+                            },
+                            {
+                                question: "Describe the roles of the Program Counter (PC) and Memory Address Register (MAR).",
+                                answer: "PC: Holds the address of the next instruction. MAR: Holds the address of data/instructions to be fetched/stored."
+                            },
+                            {
+                                question: "Explain the purpose of the ALU and Control Unit in a CPU.",
+                                answer: "ALU: Performs arithmetic and logical operations. CU: Directs operations by decoding instructions and controlling data flow."
+                            },
+                            {
+                                question: "Describe how the data bus and control bus function in a computer.",
+                                answer: "Data bus: Transfers data between CPU, memory, and peripherals. Control bus: Carries control signals to coordinate operations."
+                            },
+                            {
+                                question: "Explain how clock speed affects computer performance.",
+                                answer: "Higher clock speed increases the rate of instruction execution, improving performance, but may increase heat and power use."
+                            },
+                            {
+                                question: "Compare USB and HDMI ports for peripheral connections.",
+                                answer: "USB: Versatile, supports data and power for devices like keyboards. HDMI: Specialized for high-definition video/audio, used for monitors."
+                            },
+                            {
+                                question: "Describe the fetch stage of the Fetch-Execute cycle using register transfer notation.",
+                                answer: "MAR ← [PC], PC ← [PC] + 1, MDR ← [[MAR]], CIR ← [MDR]."
+                            },
+                            {
+                                question: "Explain how a keyboard interrupt is handled by the CPU.",
+                                answer: "Interrupt flag is raised, current registers saved, ISR processes key input, registers restored, execution resumes."
+                            }
+                        ]
+                    },
+                    {
+                        number: "4.2",
+                        name: "Assembly Language",
+                        points: [
+                            {
+                                point: "Show understanding of the relationship between assembly language and machine code",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe the different stages of the assembly process for a two-pass assembler",
+                                notes: "Apply the two-pass assembler process to a given simple assembly language program"
+                            },
+                            {
+                                point: "Trace a given simple assembly language program",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding that a set of instructions are grouped",
+                                notes: "Including the following groups: Data movement, Input and output of data, Arithmetic operations, Unconditional and conditional instructions, Compare instructions"
+                            },
+                            {
+                                point: "Show understanding of and be able to use different modes of addressing",
+                                notes: "Including immediate, direct, indirect, indexed, relative"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the relationship between assembly language and machine code.",
+                                answer: "Assembly language is a human-readable representation of machine code, which is binary instructions executed by the CPU."
+                            },
+                            {
+                                question: "Describe the two stages of a two-pass assembler process.",
+                                answer: "First pass: Creates a symbol table for labels and addresses. Second pass: Translates instructions into machine code using the symbol table."
+                            },
+                            {
+                                question: "Identify two instruction groups in an assembly language instruction set.",
+                                answer: "Data movement (e.g., LDD, STO), Arithmetic operations (e.g., ADD, SUB)."
+                            },
+                            {
+                                question: "Compare immediate and direct addressing modes.",
+                                answer: "Immediate: Operand is the value itself (e.g., LDM #5). Direct: Operand is the address of the value (e.g., LDD 100)."
+                            }
+                        ],
+                        notes: "Tracing assembly programs is omitted as it requires specific code and tables, better suited for manual practice."
+                    },
+                    {
+                        number: "4.3",
+                        name: "Bit Manipulation",
+                        points: [
+                            {
+                                point: "Show understanding of and perform binary shifts",
+                                notes: "Logical, arithmetic, and cyclic. Left shift, right shift"
+                            },
+                            {
+                                point: "Show understanding of how bit manipulation can be used to monitor/control a device",
+                                notes: "Carry out bit manipulation operations. Test and set a bit (using bit masking)"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Show the result of a 3-place right logical shift on the binary number 11001100.",
+                                answer: "00011001"
+                            },
+                            {
+                                question: "Explain how bit masking can control a device using the AND operation.",
+                                answer: "Bit masking with AND sets specific bits to 0 or 1, controlling device settings (e.g., enabling a sensor by masking irrelevant bits)."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "5",
+                name: "System Software",
+                notes: [
+                    "Operating Systems manage hardware, software, and resources for efficient operation.",
+                    "OS tasks include memory, process, and file management.",
+                    "Utility software like defragmentation improves disk performance.",
+                    "Program libraries (e.g., DLLs) provide reusable code, saving development time.",
+                    "Assemblers translate assembly to machine code; compilers are faster, interpreters aid debugging.",
+                    "IDEs offer coding aids like prompts and syntax checks."
+                ],
+                subtopics: [
+                    {
+                        number: "5.1",
+                        name: "Operating Systems",
+                        points: [
+                            {
+                                point: "Explain why a computer system requires an Operating System (OS)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Explain the key management tasks carried out by the Operating System",
+                                notes: "Including memory management, file management, security management, hardware management (input/output/peripherals), process management"
+                            },
+                            {
+                                point: "Show understanding of the need for typical utility software provided with an Operating System",
+                                notes: "Including disk formatter, virus checker, defragmentation software, disk contents analysis/disk repair software, file compression, back-up software"
+                            },
+                            {
+                                point: "Show understanding of program libraries",
+                                notes: "Including software under development is often constructed using existing code from program libraries, the benefits to the developer of software constructed using library files, including Dynamic Link Library (DLL) files"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain why a computer requires an Operating System.",
+                                answer: "The OS manages hardware, software, and user interactions, enabling efficient resource allocation and system operation."
+                            },
+                            {
+                                question: "Describe two key management tasks of an Operating System.",
+                                answer: "Memory management: Allocates memory to processes. Process management: Schedules and controls running processes."
+                            },
+                            {
+                                question: "Explain the purpose of defragmentation software in an OS.",
+                                answer: "Defragmentation software reorganizes fragmented files on a disk, improving access speed and system performance."
+                            },
+                            {
+                                question: "Describe the benefits of using program libraries like DLL files.",
+                                answer: "Libraries provide tested, reusable code, reducing development time and errors. DLLs allow dynamic linking, saving memory."
+                            }
+                        ]
+                    },
+                    {
+                        number: "5.2",
+                        name: "Language Translators",
+                        points: [
+                            {
+                                point: "Show understanding of the need for assembler software, compiler, and interpreter",
+                                notes: "For translation of assembly language (assembler), high-level language (compiler), and translation/execution (interpreter)"
+                            },
+                            {
+                                point: "Explain the benefits and drawbacks of using either a compiler or interpreter and justify the use of each",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show awareness that high-level language programs may be partially compiled and partially interpreted, such as Java (console mode)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe features found in a typical Integrated Development Environment (IDE)",
+                                notes: "Including for coding (context-sensitive prompts), error detection (dynamic syntax checks), presentation (prettyprint, expand/collapse code), debugging (single stepping, breakpoints, variables, expressions, report window)"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain why an assembler is needed for assembly language programs.",
+                                answer: "An assembler translates human-readable assembly code into machine code executable by the CPU."
+                            },
+                            {
+                                question: "Compare the advantages and disadvantages of a compiler vs. an interpreter.",
+                                answer: "Compiler: Faster execution, no source code needed at runtime, but harder to debug. Interpreter: Easier debugging, but slower, needs source code."
+                            },
+                            {
+                                question: "Describe two features of an IDE that aid coding.",
+                                answer: "Context-sensitive prompts suggest code completions. Dynamic syntax checks detect errors during coding."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "6",
+                name: "Security, Privacy and Data Integrity",
+                notes: [
+                    "Security protects data access; privacy ensures proper use; integrity maintains accuracy.",
+                    "Firewalls and encryption secure networks; phishing tricks users into data disclosure.",
+                    "Validation (e.g., range checks) and verification (e.g., double entry) ensure data integrity."
+                ],
+                subtopics: [
+                    {
+                        number: "6.1",
+                        name: "Data Security",
+                        points: [
+                            {
+                                point: "Explain the difference between the terms security, privacy, and integrity of data",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show appreciation of the need for both the security of data and the security of the computer system",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe security measures designed to protect computer systems, ranging from the stand-alone PC to a network of computers",
+                                notes: "Including user accounts, passwords, authentication techniques such as digital signatures and biometrics, firewall, anti-virus software, anti-spyware, encryption"
+                            },
+                            {
+                                point: "Show understanding of the threats to computer and data security posed by networks and the internet",
+                                notes: "Including malware (virus, spyware), hackers, phishing, pharming"
+                            },
+                            {
+                                point: "Describe methods that can be used to restrict the risks posed by threats",
+                                notes: "Including encryption, access rights"
+                            },
+                            {
+                                point: "Describe security methods designed to protect the security of data",
+                                notes: "No additional notes provided"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the difference between data security, privacy, and integrity.",
+                                answer: "Security: Protecting data from unauthorized access. Privacy: Ensuring data is used appropriately. Integrity: Maintaining data accuracy and consistency."
+                            },
+                            {
+                                question: "Describe two security measures for protecting a network of computers.",
+                                answer: "Firewall: Blocks unauthorized access based on rules. Encryption: Scrambles data to prevent interception."
+                            },
+                            {
+                                question: "Explain how phishing poses a threat to data security.",
+                                answer: "Phishing tricks users into revealing sensitive data (e.g., passwords) via fake emails or websites, compromising security."
+                            }
+                        ]
+                    },
+                    {
+                        number: "6.2",
+                        name: "Data Integrity",
+                        points: [
+                            {
+                                point: "Describe how data validation and data verification help protect the integrity of data",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe and use methods of data validation",
+                                notes: "Including range check, format check, length check, presence check, existence check, limit check, check digit"
+                            },
+                            {
+                                point: "Describe and use methods of data verification during data entry and data transfer",
+                                notes: "During data entry including visual check, double entry. During data transfer including parity check (byte and block), checksum"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain how data validation protects data integrity.",
+                                answer: "Validation ensures data meets rules (e.g., range check), preventing incorrect data entry that could compromise integrity."
+                            },
+                            {
+                                question: "Describe two data validation methods.",
+                                answer: "Range check: Ensures data falls within a valid range. Check digit: Verifies data accuracy using a calculated digit."
+                            },
+                            {
+                                question: "Explain how double entry verification works during data entry.",
+                                answer: "Double entry requires entering data twice; the system compares both entries to ensure they match, reducing errors."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "7",
+                name: "Ethics and Ownership",
+                notes: [
+                    "Ethics guide responsible technology use; professional bodies like BCS provide standards.",
+                    "Unethical software practices can cause breaches or harm.",
+                    "Copyright protects intellectual property; open-source licenses allow modification.",
+                    "AI applications (e.g., chatbots) impact jobs and society."
+                ],
+                subtopics: [
+                    {
+                        number: "7.1",
+                        name: "Ethics and Ownership",
+                        points: [
+                            {
+                                point: "Show understanding of the need for and purpose of ethics as a computing professional",
+                                notes: "Understand the importance of joining a professional ethical body including BCS, IEEE"
+                            },
+                            {
+                                point: "Show understanding of the need to act ethically and the impact of acting ethically or unethically for a given situation",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the need for copyright legislation",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the different types of software licensing and justify the use of a licence for a given situation",
+                                notes: "Licences to include Free Software Foundation, the Open Source Initiative, shareware, commercial software"
+                            },
+                            {
+                                point: "Show understanding of Artificial Intelligence (AI)",
+                                notes: "Understand the impact of AI including social, economic, and environmental issues. Understand the applications of AI"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain why ethics are important for computing professionals.",
+                                answer: "Ethics ensure responsible use of technology, protecting users and society. Joining bodies like BCS provides ethical guidelines."
+                            },
+                            {
+                                question: "Describe the impact of unethical behavior in software development.",
+                                answer: "Unethical behavior (e.g., ignoring security flaws) can lead to data breaches, financial loss, and harm to users."
+                            },
+                            {
+                                question: "Explain the purpose of copyright legislation in computing.",
+                                answer: "Copyright protects software creators' intellectual property, preventing unauthorized use and ensuring fair compensation."
+                            },
+                            {
+                                question: "Compare open source and commercial software licenses.",
+                                answer: "Open source: Free, modifiable, community-driven (e.g., Free Software Foundation). Commercial: Paid, restricted, proprietary."
+                            },
+                            {
+                                question: "Describe two applications of Artificial Intelligence and one social impact.",
+                                answer: "Applications: Image recognition, chatbots. Social impact: Job displacement due to automation."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "8",
+                name: "Databases",
+                notes: [
+                    "File-based systems suffer from redundancy and inconsistency; relational databases use keys and integrity rules.",
+                    "Primary keys identify records; foreign keys link tables.",
+                    "Normalization (1NF-3NF) eliminates dependencies for efficient design.",
+                    "DBMS manages data with dictionaries and query processors.",
+                    "DDL (e.g., CREATE TABLE) defines structures; DML (e.g., SELECT) manipulates data."
+                ],
+                subtopics: [
+                    {
+                        number: "8.1",
+                        name: "Database Concepts",
+                        points: [
+                            {
+                                point: "Show understanding of the limitations of using a file-based approach for the storage and retrieval of data",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Describe the features of a relational database that address the limitations of a file-based approach",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of and use the terminology associated with a relational database model",
+                                notes: "Including entity, table, record, field, tuple, attribute, primary key, candidate key, secondary key, foreign key, relationship (one-to-many, one-to-one, many-to-many), referential integrity, indexing"
+                            },
+                            {
+                                point: "Use an entity-relationship (E-R) diagram to document a database design",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding of the normalisation process",
+                                notes: "First Normal Form (1NF), Second Normal Form (2NF), Third Normal Form (3NF)"
+                            },
+                            {
+                                point: "Explain why a given set of database tables are, or are not, in 3NF",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Produce a normalised database design for a description of a database, a given set of data, or a given set of tables",
+                                notes: "No additional notes provided"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain two limitations of a file-based approach to data storage.",
+                                answer: "Data redundancy: Duplicated data increases storage needs. Data inconsistency: Updates may not sync across files."
+                            },
+                            {
+                                question: "Describe two features of a relational database that address file-based limitations.",
+                                answer: "Tables with keys reduce redundancy. Referential integrity ensures consistent data across tables."
+                            },
+                            {
+                                question: "Define primary key and foreign key in a relational database.",
+                                answer: "Primary key: Uniquely identifies a record in a table. Foreign key: Links a record to a primary key in another table."
+                            },
+                            {
+                                question: "Explain why a table with partial dependencies is not in 2NF.",
+                                answer: "2NF requires no partial dependencies; attributes must depend fully on the entire primary key, not a subset."
+                            }
+                        ],
+                        notes: "E-R diagrams and normalization design are omitted as they require diagrams, better suited for manual practice."
+                    },
+                    {
+                        number: "8.2",
+                        name: "Database Management Systems (DBMS)",
+                        points: [
+                            {
+                                point: "Show understanding of the features provided by a DBMS that address the issues of a file-based approach",
+                                notes: "Including data management (maintaining a data dictionary), data modelling, logical schema, data integrity, data security (backup procedures, access rights)"
+                            },
+                            {
+                                point: "Show understanding of how software tools found within a DBMS are used in practice",
+                                notes: "Including the use and purpose of developer interface, query processor"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Describe two features of a DBMS that improve on file-based systems.",
+                                answer: "Data dictionary: Manages metadata for consistency. Query processor: Enables efficient data retrieval."
+                            },
+                            {
+                                question: "Explain the role of the query processor in a DBMS.",
+                                answer: "The query processor interprets and executes SQL queries, retrieving or modifying data efficiently."
+                            }
+                        ]
+                    },
+                    {
+                        number: "8.3",
+                        name: "Data Definition Language (DDL) and Data Manipulation Language (DML)",
+                        points: [
+                            {
+                                point: "Show understanding that the DBMS carries out all creation/modification of the database structure using its Data Definition Language (DDL)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding that the DBMS carries out all queries and maintenance of data using its DML",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Show understanding that the industry standard for both DDL and DML is Structured Query Language (SQL)",
+                                notes: "No additional notes provided"
+                            },
+                            {
+                                point: "Understand given SQL (DDL) statements and be able to write simple SQL (DDL) statements",
+                                notes: "Create a database (CREATE DATABASE), Create a table definition (CREATE TABLE), change a table definition (ALTER TABLE), add primary/foreign keys"
+                            },
+                            {
+                                point: "Write an SQL script to query or modify data (DML) which are stored in (at most two) database tables",
+                                notes: "Queries: SELECT, WHERE, ORDER BY, GROUP BY, INNER JOIN, SUM, COUNT, AVG. Maintenance: INSERT INTO, DELETE FROM, UPDATE"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the difference between DDL and DML in a DBMS.",
+                                answer: "DDL defines/modifies database structure (e.g., CREATE TABLE). DML manipulates data (e.g., SELECT, INSERT)."
+                            },
+                            {
+                                question: "Write an SQL DDL statement to create a table for bird types.",
+                                answer: `CREATE TABLE BIRD_TYPE (
+    BirdID CHAR(4) NOT NULL,
+    Name VARCHAR(9),
+    Size VARCHAR(6),
+    PRIMARY KEY (BirdID)
+);`
+                            },
+                            {
+                                question: "Write an SQL DML query to count birds by size for a person.",
+                                answer: `SELECT BIRD_TYPE.Size, COUNT(BIRD_TYPE.BirdID) AS NumberOfBirds
+FROM BIRD_TYPE, BIRD_SEEN
+WHERE BIRD_SEEN.PersonID = "J_123"
+AND BIRD_TYPE.BirdID = BIRD_SEEN.BirdID
+GROUP BY BIRD_TYPE.Size;`
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                number: "9",
+                name: "Algorithm Design and Problem-solving",
+                notes: [
+                    "Abstraction simplifies systems by focusing on essentials, improving design.",
+                    "Decomposition breaks problems into manageable sub-problems for modular coding."
+                ],
+                subtopics: [
+                    {
+                        number: "9.1",
+                        name: "Computational Thinking Skills",
+                        points: [
+                            {
+                                point: "Show an understanding of abstraction",
+                                notes: "Need for and benefits of using abstraction. Describe the purpose of abstraction. Produce an abstract model of a system by only including essential details"
+                            },
+                            {
+                                point: "Describe and use decomposition",
+                                notes: "Break down problems into sub-problems leading to the concept of a program module (procedure/function)"
+                            }
+                        ],
+                        questions: [
+                            {
+                                question: "Explain the purpose and benefits of abstraction in computational thinking.",
+                                answer: "Abstraction simplifies complex systems by focusing on essential details, reducing complexity and improving design efficiency."
+                            },
+                            {
+                                question: "Describe how decomposition is used to solve a programming problem.",
+                                answer: "Decomposition breaks a problem into smaller sub-problems, each solved by a module (e.g., procedure), improving manageability."
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // State management
+        let questionStates = JSON.parse(localStorage.getItem('questionStates')) || {};
+        let flashcards = [];
+
+        // Initialize question states
+        topics.forEach(topic => {
+            topic.subtopics.forEach(subtopic => {
+                subtopic.questions.forEach((q, index) => {
+                    const qId = `${topic.name}-${subtopic.name}-${index}`;
+                    if (!questionStates[qId]) {
+                        questionStates[qId] = { confidence: 'red', mastered: false };
+                    }
+                });
+            });
+        });
+
+        // Update progress metrics
+        function updateProgress() {
+            const totalQuestions = Object.keys(questionStates).length;
+            const masteredQuestions = Object.values(questionStates).filter(s => s.mastered).length;
+            const completionPercentage = totalQuestions ? ((masteredQuestions / totalQuestions) * 100).toFixed(1) : 0;
+
+            const totalEl = document.getElementById('total-questions');
+            const masteredEl = document.getElementById('mastered-questions');
+            const completionEl = document.getElementById('completion-percentage');
+
+            if (totalEl && masteredEl && completionEl) {
+                totalEl.textContent = totalQuestions;
+                masteredEl.textContent = masteredQuestions;
+                completionEl.textContent = `${completionPercentage}%`;
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('questionStates', JSON.stringify(questionStates));
+            updateProgress();
+        }
+
+        // Render topics
+        function renderTopics() {
+            const container = document.getElementById('topics-container');
+            container.innerHTML = '';
+
+            topics.forEach(topic => {
+                const topicDiv = document.createElement('div');
+                topicDiv.className = 'bg-white border rounded-xl shadow-sm';
+                topicDiv.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-t-xl border-b">
+                        <h2 class="font-semibold text-xl text-gray-800">${topic.number}. ${topic.name}</h2>
+                    </div>
+                    <div class="p-6 space-y-8">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Topic Notes</h4>
+                            <ul class="topic-note text-sm text-gray-600 list-disc list-inside">
+                                ${topic.notes.map(note => `<li>${note}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+
+                const subtopicsContainer = topicDiv.querySelector('div.p-6');
+                topic.subtopics.forEach(subtopic => {
+                    const subtopicDiv = document.createElement('div');
+                    subtopicDiv.innerHTML = `
+                        <h3 class="font-medium text-lg text-gray-800 mb-4">${subtopic.number} ${subtopic.name}</h3>
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Syllabus Points and Notes</h4>
+                            <div class="space-y-4">${subtopic.points.map(p => `
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">${p.point}</p>
+                                    <p class="point-note text-sm text-gray-600">${p.notes}</p>
+                                </div>
+                            `).join('')}</div>
+                        </div>
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Questions</h4>
+                            <div class="space-y-4"></div>
+                            ${subtopic.notes ? `<p class="text-sm text-gray-600 mt-4">${subtopic.notes}</p>` : ''}
+                        </div>
+                        <button class="make-flashcards bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium" data-subtopic="${topic.name}-${subtopic.name}">Create Flashcards</button>
+                    `;
+
+                    const questionsContainer = subtopicDiv.querySelector('div.space-y-4');
+                    subtopic.questions.forEach((q, index) => {
+                        const qId = `${topic.name}-${subtopic.name}-${index}`;
+                        const state = questionStates[qId];
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = `question-card p-4 border rounded-lg ${state.confidence === 'red' ? 'border-red-200 bg-red-50' : state.confidence === 'amber' ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`;
+                        questionDiv.innerHTML = `
+                            <p class="text-sm font-medium text-gray-800">${q.question}</p>
+                            <textarea class="w-full p-2 border border-gray-300 rounded-lg mt-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Type your answer..."></textarea>
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="flex space-x-2">
+                                    <button class="check-answer bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 text-sm font-medium" data-qid="${qId}" title="Check Answer">Check Answer</button>
+                                    <div class="flex space-x-2">
+                                        <button class="confidence-btn bg-red-500 w-5 h-5 rounded-full confidence" data-qid="${qId}" data-confidence="red" title="Not Confident"></button>
+                                        <button class="confidence-btn bg-yellow-500 w-5 h-5 rounded-full confidence" data-qid="${qId}" data-confidence="amber" title="Somewhat Confident"></button>
+                                        <button class="confidence-btn bg-green-500 w-5 h-5 rounded-full confidence" data-qid="${qId}" data-confidence="green" title="Confident"></button>
+                                    </div>
+                                </div>
+                                <label class="flex items-center space-x-1 text-sm text-gray-600">
+                                    <input type="checkbox" class="mastered h-4 w-4 text-blue-600 rounded" data-qid="${qId}" ${state.mastered ? 'checked' : ''} title="Mark as Mastered">
+                                    <span>Mastered</span>
+                                </label>
+                            </div>
+                        `;
+                        questionsContainer.appendChild(questionDiv);
+                    });
+
+                    subtopicsContainer.appendChild(subtopicDiv);
+                });
+
+                container.appendChild(topicDiv);
+            });
+        }
+
+        // Event listeners
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('check-answer')) {
+                const qId = e.target.dataset.qid;
+                const [topicName, subtopicName, qIndex] = qId.split('-');
+                const question = topics
+                    .find(t => t.name === topicName)
+                    .subtopics.find(s => s.name === subtopicName)
+                    .questions[parseInt(qIndex)];
+
+                const modal = document.getElementById('answer-modal');
+                const content = document.getElementById('answer-content');
+                
+                if (modal && content) {
+                    content.textContent = question.answer;
+                    modal.classList.remove('hidden');
+                } else {
+                    console.error('Answer modal or content not found');
+                }
+            }
+
+            if (e.target.id === 'close-answer') {
+                document.getElementById('answer-modal').classList.add('hidden');
+            }
+
+            if (e.target.classList.contains('confidence')) {
+                const qId = e.target.dataset.qid;
+                const confidence = e.target.dataset.confidence;
+                questionStates[qId].confidence = confidence;
+                saveState();
+                renderTopics();
+            }
+
+            if (e.target.classList.contains('mastered')) {
+                const qId = e.target.dataset.qid;
+                questionStates[qId].mastered = e.target.checked;
+                saveState();
+                renderTopics();
+            }
+
+            if (e.target.classList.contains('make-flashcards')) {
+                const subtopicId = e.target.dataset.subtopic;
+                const [topicName, subtopicName] = subtopicId.split('-');
+                const subtopic = topics
+                    .find(t => t.name === topicName)
+                    .subtopics.find(s => s.name === subtopicName);
+                
+                flashcards = subtopic.questions.map(q => ({
+                    front: q.question,
+                    back: q.answer
+                }));
+
+                const modal = document.getElementById('flashcards-modal');
+                const content = document.getElementById('flashcards-content');
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        ${flashcards.map((f, i) => `
+                            <div class="flashcard border border-gray-200 p-4 rounded-lg cursor-pointer" data-index="${i}">
+                                <p class="text-sm font-medium text-gray-800">${f.front}</p>
+                                <p class="text-sm text-gray-600 hidden mt-2">${f.back}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+            }
+
+            if (e.target.classList.contains('flashcard')) {
+                const card = e.target;
+                const back = card.querySelector('p.text-gray-600');
+                back.classList.toggle('hidden');
+            }
+
+            if (e.target.id === 'close-flashcards') {
+                document.getElementById('flashcards-modal').classList.add('hidden');
+            }
+        });
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTopics();
+            updateProgress();
+        });
+    </script>
+</body>
+</html>
